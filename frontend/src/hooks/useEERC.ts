@@ -313,6 +313,7 @@ export function useEERC() {
         const provider = new ethers.JsonRpcProvider(RPC_URL);
         const registrar = getRegistrarContract(provider);
         const registered: boolean = await registrar.isUserRegistered(address);
+        setState((s) => ({ ...s, isRegistered: registered }));
         return registered;
       } catch (err) {
         setError(describeError(err, "Failed to check registration status."));

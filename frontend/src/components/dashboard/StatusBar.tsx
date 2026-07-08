@@ -1,0 +1,76 @@
+"use client";
+
+import { useWalletContext } from "@/providers/Providers";
+
+function formatAddress(address: string): string {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+export function StatusBar() {
+  const {
+    account,
+    isConnected,
+    isCorrectNetwork,
+    isConnecting,
+    connectWallet,
+    disconnectWallet,
+  } = useWalletContext();
+
+  const statusDotColor = !isConnected
+    ? "bg-gray-500"
+    : isCorrectNetwork
+      ? "bg-phantom-success"
+      : "bg-phantom-danger";
+
+  const statusLabel = !isConnected
+    ? "Not Connected"
+    : isCorrectNetwork
+      ? "Connected to Fuji"
+      : "Wrong Network";
+
+  return (
+    <section className="phantom-card rounded-2xl p-6">
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-phantom-accent">
+            <span aria-hidden="true">◈</span> PHANTOM
+          </h1>
+          <p className="mt-1 text-sm text-phantom-text-muted">
+            Private Trading Shield on Avalanche
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className={`h-2.5 w-2.5 rounded-full ${statusDotColor}`} />
+          <span className="text-sm text-phantom-text">{statusLabel}</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {isConnected && account ? (
+            <>
+              <span className="font-mono text-sm text-phantom-text">
+                {formatAddress(account)}
+              </span>
+              <button
+                type="button"
+                onClick={disconnectWallet}
+                className="text-xs text-phantom-text-muted underline-offset-2 hover:text-phantom-text hover:underline"
+              >
+                Disconnect
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={connectWallet}
+              disabled={isConnecting}
+              className="phantom-card rounded-full border border-phantom-accent/50 px-5 py-2 text-sm font-medium text-phantom-accent transition-opacity hover:opacity-80 disabled:opacity-50"
+            >
+              {isConnecting ? "Connecting…" : "Connect Wallet"}
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
