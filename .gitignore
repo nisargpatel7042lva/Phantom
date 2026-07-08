@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# environment
+.env
+.env.local
+.env.*.local
+
+# next.js
+.next/
+out/
+
+# build output
+dist/
+build/
+
+# hardhat / foundry
+cache/
+artifacts/
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*
+
+
