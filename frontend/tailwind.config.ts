@@ -1,11 +1,12 @@
 import type { Config } from "tailwindcss";
+import defaultTheme from "tailwindcss/defaultTheme";
 
 const config: Config = {
   darkMode: ["class"],
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     container: {
@@ -67,6 +68,23 @@ const config: Config = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // PHANTOM brand palette — namespaced to avoid colliding with the
+        // shadcn tokens above (e.g. "accent" is already taken).
+        phantom: {
+          bg: "#080B14",
+          surface: "#0D1117",
+          accent: "#00D4FF",
+          "accent-dim": "rgba(0, 212, 255, 0.1)",
+          success: "#00FF87",
+          danger: "#FF3366",
+          text: "#E2E8F0",
+          "text-muted": "rgba(226, 232, 240, 0.4)",
+          border: "rgba(0, 212, 255, 0.15)",
+        },
+      },
+      fontFamily: {
+        sans: ["var(--font-space-grotesk)", ...defaultTheme.fontFamily.sans],
+        mono: ["var(--font-space-mono)", ...defaultTheme.fontFamily.mono],
       },
       borderRadius: {
         lg: "var(--radius)",
