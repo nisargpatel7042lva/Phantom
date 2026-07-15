@@ -79,6 +79,57 @@ const unsupportedProveFunc: ProveFunction = async () => {
 
 const STORAGE_PREFIX = "phantom:eerc:decryptionKey:";
 
+// ── i0()-based key derivation ──────────────────────────────────────────────
+// PHANTOM's demo wallets were registered on-chain via eerc-backend-converter's
+// Hardhat scripts, which derive the eERC decryption key from a wallet
+// signature using an "i0()" scheme (keccak256 + Ed25519-style clamping). The
+// SDK's OWN eerc.generateDecryptionKey() uses a completely different
+// StarkEx-style "grindKey" algorithm — same signed message, different key.
+// Passing the SDK's own derived key would silently decrypt to garbage for any
+// address that was registered outside the SDK (i.e. both demo wallets).
+//
+// We derive via i0() first and verify it reproduces the actual on-chain
+// registered public key before trusting it; if it doesn't match (e.g. a
+// future user who registers fresh through the SDK's own flow), we fall back
+// to the SDK's native derivation, which remains self-consistent for them.
+const SUB_GROUP_ORDER =
+  2736030358979909402780800718157159386076813972158567259200215660948447373041n;
+
+function i0(signature: string): bigint {
+  const hash = ethers.keccak256(signature);
+  const bytes = ethers.getBytes(hash);
+  bytes[0] &= 0b11111000;
+  bytes[31] &= 0b01111111;
+  bytes[31] |= 0b01000000;
+  const le = bytes.slice().reverse();
+  let sk = BigInt(ethers.hexlify(le));
+  sk %= SUB_GROUP_ORDER;
+  if (sk === 0n) sk = 1n;
+  return sk;
+}
+
+// The SDK's formatKeyForCurve does Buffer.from(key, "hex") then blake512s it.
+// eerc-backend-converter's key formatting instead blake512s the raw UTF-8
+// bytes of the key's DECIMAL string. To make the SDK's formatting reproduce
+// the same formatted scalar (and thus the same public key), we hex-encode
+// those same UTF-8 bytes as our "hex" key: Buffer.from(thatHex, "hex")
+// decodes back to exactly the decimal string's bytes. Verified empirically
+// against the actual on-chain registered public key before relying on it.
+function toSyntheticDecryptionKeyHex(rawKey: bigint): string {
+  const decimalString = rawKey.toString(10);
+  const utf8Bytes = ethers.toUtf8Bytes(decimalString);
+  return ethers.hexlify(utf8Bytes).slice(2);
+}
+
+async function deriveI0DecryptionKey(
+  signer: ethers.JsonRpcSigner,
+  address: string,
+): Promise<string> {
+  const message = `eERC\nRegistering user with\n Address:${address.toLowerCase()}`;
+  const signature = await signer.signMessage(message);
+  return toSyntheticDecryptionKeyHex(i0(signature));
+}
+
 export interface UseEERCState {
   isRegistered: boolean;
   privateBalance: string;
@@ -280,23 +331,51 @@ export function useEERC() {
       if (cached) return cached;
 
       const { publicClient, walletClient } = createViemClients(address);
-      const existingKey = await loadDecryptionKey(address);
 
       // viem's client types here don't line up 1:1 with the wagmi-derived
       // PublicClient/WalletClient types the SDK declares (peer-dep version
       // friction), but wagmi v1's clients ARE viem clients at runtime, so
       // this is a type-only escape hatch, not a behavioral one.
-      const eerc = new EERC(
-        publicClient as never,
-        walletClient as never,
-        eercAddress,
-        registrarAddress,
-        true, // isConverter — PHANTOM only ever runs in converter mode
-        unsupportedProveFunc,
-        CIRCUIT_URLS,
-        existingKey ?? undefined,
-      );
+      const buildEerc = (decryptionKey?: string) =>
+        new EERC(
+          publicClient as never,
+          walletClient as never,
+          eercAddress,
+          registrarAddress,
+          true, // isConverter — PHANTOM only ever runs in converter mode
+          unsupportedProveFunc,
+          CIRCUIT_URLS,
+          decryptionKey,
+        );
 
+      let decryptionKey = await loadDecryptionKey(address);
+
+      if (!decryptionKey) {
+        // Try i0() first (matches how PHANTOM's demo wallets were registered)
+        // and verify it against the actual on-chain key before trusting it.
+        try {
+          const candidateKey = await deriveI0DecryptionKey(signer, address);
+          const probe = buildEerc(candidateKey);
+          const registrar = new ethers.Contract(
+            registrarAddress,
+            REGISTRAR_ABI,
+            signer.provider,
+          );
+          const onChainKey = await registrar.getUserPublicKey(address);
+          const matches =
+            probe.publicKey[0] === BigInt(onChainKey[0].toString()) &&
+            probe.publicKey[1] === BigInt(onChainKey[1].toString());
+          if (matches) {
+            decryptionKey = candidateKey;
+            await storeDecryptionKey(address, candidateKey);
+          }
+        } catch {
+          // Not registered yet, or the probe failed for some other reason —
+          // fall through and let the SDK's native flow handle it below.
+        }
+      }
+
+      const eerc = buildEerc(decryptionKey ?? undefined);
       eercCache.current.set(address, eerc);
       return eerc;
     },

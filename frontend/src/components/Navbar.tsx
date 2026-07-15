@@ -10,7 +10,7 @@ function formatAddress(address: string): string {
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-  const { account, isConnected, isConnecting, connectWallet } =
+  const { account, isConnected, isConnecting, error, connectWallet } =
     useWalletContext();
 
   useEffect(() => {
@@ -40,14 +40,21 @@ export function Navbar() {
             </span>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={connectWallet}
-            disabled={isConnecting}
-            className="phantom-card rounded-full border border-phantom-accent/50 px-5 py-2 text-sm font-medium text-phantom-accent transition-opacity hover:opacity-80 disabled:opacity-50"
-          >
-            {isConnecting ? "Connecting…" : "Connect Wallet"}
-          </button>
+          <div className="flex flex-col items-end gap-1.5">
+            <button
+              type="button"
+              onClick={connectWallet}
+              disabled={isConnecting}
+              className="phantom-card rounded-full border border-phantom-accent/50 px-5 py-2 text-sm font-medium text-phantom-accent transition-opacity hover:opacity-80 disabled:opacity-50"
+            >
+              {isConnecting ? "Connecting…" : "Connect Wallet"}
+            </button>
+            {error && (
+              <span className="max-w-[240px] text-right text-xs text-phantom-danger">
+                {error}
+              </span>
+            )}
+          </div>
         )}
       </div>
     </header>
