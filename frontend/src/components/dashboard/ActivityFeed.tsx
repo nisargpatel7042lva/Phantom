@@ -1,7 +1,9 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { type ActivityItem, timeAgo, truncateHash } from "@/lib/activity";
 import { cn } from "@/lib/utils";
+import { useSpotlight } from "@/lib/useSpotlight";
 
 const TYPE_STYLES: Record<ActivityItem["type"], string> = {
   Shield: "bg-phantom-accent-dim text-phantom-accent",
@@ -10,8 +12,14 @@ const TYPE_STYLES: Record<ActivityItem["type"], string> = {
 };
 
 export function ActivityFeed({ items }: { items: ActivityItem[] }) {
+  const spotlight = useSpotlight<HTMLElement>();
+
   return (
-    <section className="phantom-card rounded-2xl p-6">
+    <section
+      ref={spotlight.ref}
+      onMouseMove={spotlight.onMouseMove}
+      className="phantom-card spotlight rounded-2xl p-6"
+    >
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-phantom-text">Activity</h2>
         <span className="rounded-full bg-phantom-accent-dim px-3 py-1 text-xs text-phantom-accent">
@@ -37,7 +45,13 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
             </thead>
             <tbody>
               {items.map((item) => (
-                <tr key={item.id} className="border-t border-phantom-border">
+                <motion.tr
+                  key={item.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, ease: "easeOut" }}
+                  className="border-t border-phantom-border"
+                >
                   <td className="py-3">
                     <span
                       className={cn(
@@ -82,7 +96,7 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
                       {truncateHash(item.txHash)}
                     </a>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>

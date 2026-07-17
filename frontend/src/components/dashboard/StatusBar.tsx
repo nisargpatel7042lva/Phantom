@@ -1,6 +1,8 @@
 "use client";
 
 import { useWalletContext } from "@/providers/Providers";
+import { useSpotlight } from "@/lib/useSpotlight";
+import { cn } from "@/lib/utils";
 
 function formatAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -15,7 +17,9 @@ export function StatusBar() {
     connectWallet,
     disconnectWallet,
   } = useWalletContext();
+  const spotlight = useSpotlight<HTMLElement>();
 
+  const live = isConnected && isCorrectNetwork;
   const statusDotColor = !isConnected
     ? "bg-gray-500"
     : isCorrectNetwork
@@ -29,7 +33,11 @@ export function StatusBar() {
       : "Wrong Network";
 
   return (
-    <section className="phantom-card rounded-2xl p-6">
+    <section
+      ref={spotlight.ref}
+      onMouseMove={spotlight.onMouseMove}
+      className="phantom-card spotlight rounded-2xl p-6"
+    >
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-phantom-accent">
@@ -41,7 +49,13 @@ export function StatusBar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className={`h-2.5 w-2.5 rounded-full ${statusDotColor}`} />
+          <span
+            className={cn(
+              "h-2.5 w-2.5 rounded-full",
+              statusDotColor,
+              live && "status-pulse",
+            )}
+          />
           <span className="text-sm text-phantom-text">{statusLabel}</span>
         </div>
 
@@ -54,7 +68,7 @@ export function StatusBar() {
               <button
                 type="button"
                 onClick={disconnectWallet}
-                className="text-xs text-phantom-text-muted underline-offset-2 hover:text-phantom-text hover:underline"
+                className="cursor-pointer text-xs text-phantom-text-muted underline-offset-2 transition-transform duration-150 hover:text-phantom-text hover:underline active:scale-95"
               >
                 Disconnect
               </button>
@@ -64,7 +78,7 @@ export function StatusBar() {
               type="button"
               onClick={connectWallet}
               disabled={isConnecting}
-              className="phantom-card rounded-full border border-phantom-accent/50 px-5 py-2 text-sm font-medium text-phantom-accent transition-opacity hover:opacity-80 disabled:opacity-50"
+              className="phantom-card cursor-pointer rounded-full border border-phantom-accent/50 px-5 py-2 text-sm font-medium text-phantom-accent transition-all duration-150 hover:opacity-80 active:scale-95 disabled:cursor-default disabled:opacity-50 disabled:active:scale-100"
             >
               {isConnecting ? "Connecting…" : "Connect Wallet"}
             </button>

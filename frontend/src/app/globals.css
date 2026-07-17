@@ -88,6 +88,16 @@
 
 /* ── PHANTOM design system ────────────────────────────────────────────── */
 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+.text-glow {
+  text-shadow: 0 0 48px rgba(0, 212, 255, 0.3);
+}
+
 .phantom-card {
   position: relative;
   background: rgba(13, 17, 23, 0.8);
@@ -125,4 +135,44 @@
   font-family: var(--font-space-mono), monospace;
   font-size: 3rem;
   color: #00d4ff;
+}
+
+.spotlight {
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    360px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    rgba(0, 212, 255, 0.1),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
+
+.spotlight:hover::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .status-pulse {
+    animation: phantom-pulse 2.4s ease-in-out infinite;
+  }
+}
+
+@keyframes phantom-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(0, 255, 135, 0);
+  }
 }

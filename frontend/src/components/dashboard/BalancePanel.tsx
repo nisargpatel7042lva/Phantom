@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import type { ethers } from "ethers";
+import { motion } from "framer-motion";
 import { CountUp } from "./CountUp";
+import { useSpotlight } from "@/lib/useSpotlight";
 
 interface BalancePanelProps {
   isRegistered: boolean;
@@ -24,6 +26,7 @@ export function BalancePanel({
   onDepositClick,
 }: BalancePanelProps) {
   const [registerPhase, setRegisterPhase] = useState<RegisterPhase>("idle");
+  const spotlight = useSpotlight<HTMLElement>();
 
   const handleActivate = async () => {
     if (!signer || registerPhase === "loading") return;
@@ -35,7 +38,11 @@ export function BalancePanel({
   const publicBalanceNumber = Number(publicBalance || "0");
 
   return (
-    <section className="phantom-card cyan-glow rounded-2xl p-8">
+    <section
+      ref={spotlight.ref}
+      onMouseMove={spotlight.onMouseMove}
+      className="phantom-card spotlight cyan-glow rounded-2xl p-8"
+    >
       <p className="text-xs uppercase tracking-widest text-phantom-text-muted">
         Private Balance
       </p>
@@ -78,18 +85,21 @@ export function BalancePanel({
           <p className="text-sm text-phantom-text">
             Register to activate privacy
           </p>
-          <button
+          <motion.button
             type="button"
             onClick={handleActivate}
             disabled={!signer || registerPhase === "loading"}
-            className="mt-3 rounded-full bg-[#00D4FF] px-6 py-2.5 text-sm font-semibold text-[#080B14] transition-opacity hover:opacity-90 disabled:opacity-50"
+            whileHover={!signer || registerPhase === "loading" ? undefined : { scale: 1.02 }}
+            whileTap={!signer || registerPhase === "loading" ? undefined : { scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="mt-3 cursor-pointer rounded-full bg-[#00D4FF] px-6 py-2.5 text-sm font-semibold text-[#080B14] transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-50"
           >
             {registerPhase === "loading"
               ? "Generating keys..."
               : registerPhase === "success"
                 ? "Privacy Activated ✓"
                 : "Activate PHANTOM"}
-          </button>
+          </motion.button>
         </div>
       )}
     </section>

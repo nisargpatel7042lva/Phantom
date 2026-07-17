@@ -23,8 +23,8 @@ export function TransactionToast({
           <motion.div
             initial={{ x: 80, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 80, opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
+            exit={{ x: 80, opacity: 0, transition: { duration: 0.18, ease: "easeIn" } }}
+            transition={{ type: "spring", stiffness: 300, damping: 28 }}
             className="phantom-card min-w-[300px] rounded-2xl p-4"
           >
             {toast.status === "pending" && (
@@ -59,7 +59,7 @@ export function TransactionToast({
                   <button
                     type="button"
                     onClick={onDismiss}
-                    className="mt-1 text-xs text-phantom-text-muted hover:text-phantom-text"
+                    className="mt-1 cursor-pointer text-xs text-phantom-text-muted transition-transform duration-150 hover:text-phantom-text active:scale-95"
                   >
                     Dismiss
                   </button>

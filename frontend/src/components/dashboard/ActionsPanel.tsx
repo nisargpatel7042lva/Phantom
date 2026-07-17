@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import type { ethers } from "ethers";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useSpotlight } from "@/lib/useSpotlight";
 import type { ActivityItem } from "@/lib/activity";
 
 export type ActionTab = "shield" | "transfer" | "reveal";
@@ -59,6 +61,7 @@ export function ActionsPanel({
   const [transferAmount, setTransferAmount] = useState("");
   const [revealAmount, setRevealAmount] = useState("");
   const [phase, setPhase] = useState<ActionPhase>("idle");
+  const spotlight = useSpotlight<HTMLElement>();
 
   const runAction = async (fn: () => Promise<string>, type: ActivityItem["type"], amount: string | null) => {
     setPhase("loading");
@@ -116,7 +119,11 @@ export function ActionsPanel({
   };
 
   return (
-    <section className="phantom-card rounded-2xl p-6">
+    <section
+      ref={spotlight.ref}
+      onMouseMove={spotlight.onMouseMove}
+      className="phantom-card spotlight rounded-2xl p-6"
+    >
       <div className="flex gap-6 border-b border-phantom-border">
         {TABS.map((tab) => (
           <button
@@ -124,13 +131,20 @@ export function ActionsPanel({
             type="button"
             onClick={() => setActiveTab(tab.key)}
             className={cn(
-              "-mb-px border-b-2 pb-3 text-sm font-medium transition-colors",
+              "relative -mb-px cursor-pointer pb-3 text-sm font-medium transition-colors",
               activeTab === tab.key
-                ? "border-phantom-accent text-phantom-accent"
-                : "border-transparent text-phantom-text-muted hover:text-phantom-text",
+                ? "text-phantom-accent"
+                : "text-phantom-text-muted hover:text-phantom-text",
             )}
           >
             {tab.label}
+            {activeTab === tab.key && (
+              <motion.span
+                layoutId="action-tab-underline"
+                className="absolute inset-x-0 -bottom-px h-0.5 bg-phantom-accent"
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+              />
+            )}
           </button>
         ))}
       </div>
@@ -165,18 +179,29 @@ export function ActionsPanel({
             You will receive: {Number(shieldAmount || "0").toFixed(2)} eUSDC (private)
           </p>
 
-          <button
+          <motion.button
             type="button"
             onClick={handleShield}
             disabled={!isRegistered || !signer || Number(shieldAmount || "0") <= 0 || phase === "loading"}
-            className="mt-4 w-full rounded-xl bg-[#00D4FF] py-3.5 text-sm font-semibold text-[#080B14] transition-opacity hover:opacity-90 disabled:opacity-40"
+            whileHover={
+              !isRegistered || !signer || Number(shieldAmount || "0") <= 0 || phase === "loading"
+                ? undefined
+                : { scale: 1.015 }
+            }
+            whileTap={
+              !isRegistered || !signer || Number(shieldAmount || "0") <= 0 || phase === "loading"
+                ? undefined
+                : { scale: 0.98 }
+            }
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="mt-4 w-full cursor-pointer rounded-xl bg-[#00D4FF] py-3.5 text-sm font-semibold text-[#080B14] transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-40"
           >
             {phase === "loading"
               ? "Generating zk proof..."
               : phase === "success"
                 ? "Funds shielded ✓"
                 : "Shield Funds"}
-          </button>
+          </motion.button>
         </div>
       )}
 
@@ -211,7 +236,7 @@ export function ActionsPanel({
             Transfer amount: HIDDEN ◈ Zero-knowledge proof
           </p>
 
-          <button
+          <motion.button
             type="button"
             onClick={handleTransfer}
             disabled={
@@ -221,14 +246,25 @@ export function ActionsPanel({
               Number(transferAmount || "0") <= 0 ||
               phase === "loading"
             }
-            className="mt-4 w-full rounded-xl bg-[#00D4FF] py-3.5 text-sm font-semibold text-[#080B14] transition-opacity hover:opacity-90 disabled:opacity-40"
+            whileHover={
+              !isRegistered || !signer || !transferRecipient || Number(transferAmount || "0") <= 0 || phase === "loading"
+                ? undefined
+                : { scale: 1.015 }
+            }
+            whileTap={
+              !isRegistered || !signer || !transferRecipient || Number(transferAmount || "0") <= 0 || phase === "loading"
+                ? undefined
+                : { scale: 0.98 }
+            }
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="mt-4 w-full cursor-pointer rounded-xl bg-[#00D4FF] py-3.5 text-sm font-semibold text-[#080B14] transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-40"
           >
             {phase === "loading"
               ? "Generating zk proof..."
               : phase === "success"
                 ? "Transfer sent ✓"
                 : "Send Privately"}
-          </button>
+          </motion.button>
         </div>
       )}
 
@@ -264,18 +300,29 @@ export function ActionsPanel({
             </p>
           </div>
 
-          <button
+          <motion.button
             type="button"
             onClick={handleReveal}
             disabled={!isRegistered || !signer || Number(revealAmount || "0") <= 0 || phase === "loading"}
-            className="mt-4 w-full rounded-xl border border-[#00D4FF] bg-transparent py-3.5 text-sm font-semibold text-phantom-accent transition-opacity hover:opacity-80 disabled:opacity-40"
+            whileHover={
+              !isRegistered || !signer || Number(revealAmount || "0") <= 0 || phase === "loading"
+                ? undefined
+                : { scale: 1.015 }
+            }
+            whileTap={
+              !isRegistered || !signer || Number(revealAmount || "0") <= 0 || phase === "loading"
+                ? undefined
+                : { scale: 0.98 }
+            }
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="mt-4 w-full cursor-pointer rounded-xl border border-[#00D4FF] bg-transparent py-3.5 text-sm font-semibold text-phantom-accent transition-opacity hover:opacity-80 disabled:cursor-default disabled:opacity-40"
           >
             {phase === "loading"
               ? "Generating zk proof..."
               : phase === "success"
                 ? "Funds revealed ✓"
                 : "Reveal Funds"}
-          </button>
+          </motion.button>
         </div>
       )}
     </section>
