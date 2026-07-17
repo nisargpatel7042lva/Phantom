@@ -1,68 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ethers } from "ethers";
 import type { EIP1193Provider } from "viem";
-
-// EIP-6963 (Multi Injected Provider Discovery). When more than one wallet
-// extension is installed, each announces itself instead of racing to clobber
-// `window.ethereum` — without this, whichever extension wins that race
-// becomes the app's provider, which is a real problem for an app named
-// PHANTOM: the actual Phantom wallet extension (Solana-first, EVM support
-// opt-in) commonly wins the race over MetaMask, and if its EVM account
-// isn't enabled, wallet_requestAccounts fails with a wallet-specific "no
-// account" error even though MetaMask has accounts ready.
-interface EIP6963ProviderInfo {
-  uuid: string;
-  name: string;
-  icon: string;
-  rdns: string;
-}
-
-interface EIP6963ProviderDetail {
-  info: EIP6963ProviderInfo;
-  provider: EIP1193Provider;
-}
-
-const PREFERRED_WALLET_RDNS = "io.metamask";
-
-function discoverAnnouncedProviders(): Promise<EIP6963ProviderDetail[]> {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") {
-      resolve([]);
-      return;
-    }
-
-    const found: EIP6963ProviderDetail[] = [];
-    const onAnnounce = (event: Event) => {
-      const detail = (event as CustomEvent<EIP6963ProviderDetail>).detail;
-      if (detail && !found.some((p) => p.info.uuid === detail.info.uuid)) {
-        found.push(detail);
-      }
-    };
-
-    window.addEventListener("eip6963:announceProvider", onAnnounce);
-    window.dispatchEvent(new Event("eip6963:requestProvider"));
-
-    // Providers announce synchronously in response to the request event;
-    // one macrotask is enough to let every listener run.
-    setTimeout(() => {
-      window.removeEventListener("eip6963:announceProvider", onAnnounce);
-      resolve(found);
-    }, 50);
-  });
-}
-
-async function resolvePreferredProvider(): Promise<EIP1193Provider | undefined> {
-  const announced = await discoverAnnouncedProviders();
-  if (announced.length === 0) {
-    // No EIP-6963-compliant wallet announced itself — fall back to
-    // whichever extension claimed the legacy `window.ethereum` global.
-    return typeof window !== "undefined" ? window.ethereum : undefined;
-  }
-  const preferred = announced.find((p) => p.info.rdns === PREFERRED_WALLET_RDNS);
-  return (preferred ?? announced[0]).provider;
-}
+import { resolveInjectedProvider } from "@/lib/injectedProvider";
 
 const FUJI_CHAIN_ID = 43113;
 const FUJI_CHAIN_ID_HEX = "0xa869";
@@ -132,19 +73,13 @@ export function useWallet() {
     error: null,
   });
 
-  // Cached once resolved so every call site (connect, switch network,
-  // auto-reconnect, event listeners) talks to the same underlying
-  // provider instance instead of re-racing EIP-6963 discovery each time.
-  const providerRef = useRef<EIP1193Provider | undefined>(undefined);
-
-  const getActiveProvider = useCallback(async (): Promise<
-    EIP1193Provider | undefined
-  > => {
-    if (providerRef.current) return providerRef.current;
-    const resolved = await resolvePreferredProvider();
-    providerRef.current = resolved;
-    return resolved;
-  }, []);
+  // resolveInjectedProvider caches module-wide, so every call site here
+  // (connect, switch network, auto-reconnect, event listeners) AND the eERC
+  // SDK's viem client in useEERC all share the same provider instance.
+  const getActiveProvider = useCallback(
+    () => resolveInjectedProvider(),
+    [],
+  );
 
   const syncFromProvider = useCallback(
     async (browserProvider: ethers.BrowserProvider) => {

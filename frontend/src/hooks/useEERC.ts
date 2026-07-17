@@ -3,14 +3,9 @@
 import { useCallback, useRef, useState } from "react";
 import { ethers } from "ethers";
 import { EERC } from "@avalabs/ac-eerc-sdk";
-import {
-  createPublicClient,
-  createWalletClient,
-  custom,
-  http,
-  type EIP1193Provider,
-} from "viem";
+import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { avalancheFuji } from "viem/chains";
+import { resolveInjectedProvider } from "@/lib/injectedProvider";
 
 import EncryptedERCArtifact from "@/contracts/abis/EncryptedERC.json";
 import RegistrarArtifact from "@/contracts/abis/Registrar.json";
@@ -155,15 +150,6 @@ function getContractAddresses(): {
   };
 }
 
-function getInjectedProvider(): EIP1193Provider {
-  if (typeof window === "undefined" || !window.ethereum) {
-    throw new Error(
-      "No injected wallet found. Please install a wallet like MetaMask.",
-    );
-  }
-  return window.ethereum;
-}
-
 function describeError(err: unknown, fallback: string): string {
   if (err instanceof Error && err.message) return err.message;
   if (typeof err === "string") return err;
@@ -254,18 +240,29 @@ async function loadDecryptionKey(address: string): Promise<string | null> {
 
 // ── viem bridge ─────────────────────────────────────────────────────────
 // @avalabs/ac-eerc-sdk is built on viem/wagmi. PHANTOM is an ethers.js app,
-// so we bridge from the wallet's injected EIP-1193 provider (the same one
-// ethers.BrowserProvider wraps) into a viem PublicClient/WalletClient pair
-// purely to satisfy the SDK's constructor.
+// so we bridge from the wallet's injected EIP-1193 provider into a viem
+// PublicClient/WalletClient pair purely to satisfy the SDK's constructor.
+// The provider MUST come from resolveInjectedProvider (EIP-6963) — the same
+// one useWallet's ethers signer uses. Building on raw window.ethereum here
+// caused a split-brain bug: approve succeeded via MetaMask (ethers path)
+// while the SDK's deposit/transfer/withdraw went to whichever extension won
+// the window.ethereum race and failed with "wallet must has at least one
+// account".
 
-function createViemClients(address: string) {
+async function createViemClients(address: string) {
+  const injected = await resolveInjectedProvider();
+  if (!injected) {
+    throw new Error(
+      "No injected wallet found. Please install a wallet like MetaMask.",
+    );
+  }
   const publicClient = createPublicClient({
     chain: avalancheFuji,
     transport: http(RPC_URL),
   });
   const walletClient = createWalletClient({
     chain: avalancheFuji,
-    transport: custom(getInjectedProvider()),
+    transport: custom(injected),
     account: address as `0x${string}`,
   });
   return { publicClient, walletClient };
@@ -330,7 +327,7 @@ export function useEERC() {
       const cached = eercCache.current.get(address);
       if (cached) return cached;
 
-      const { publicClient, walletClient } = createViemClients(address);
+      const { publicClient, walletClient } = await createViemClients(address);
 
       // viem's client types here don't line up 1:1 with the wagmi-derived
       // PublicClient/WalletClient types the SDK declares (peer-dep version
