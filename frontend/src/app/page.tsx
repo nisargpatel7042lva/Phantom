@@ -9,13 +9,13 @@ import {
   EyeOff,
   FileSearch,
   KeyRound,
-  Lock,
   Shield,
   ShieldCheck,
   Unlock,
   Zap,
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { LogoMark } from "@/components/Logo";
 
 // Single source of truth for scroll-triggered entrance animation. Each
 // section fades/slides up once when it enters the viewport.
@@ -82,7 +82,9 @@ function Hero() {
           variants={reveal}
           className="mx-auto max-w-3xl text-center"
         >
-          <span className="inline-flex items-center gap-2 rounded-full border border-phantom-border bg-phantom-accent-dim px-4 py-1.5 text-xs font-medium text-phantom-accent">
+          <LogoMark className="mx-auto h-14 w-14 drop-shadow-[0_0_24px_rgba(0,212,255,0.5)]" />
+
+          <span className="mt-8 inline-flex items-center gap-2 rounded-full border border-phantom-border bg-phantom-accent-dim px-4 py-1.5 text-xs font-medium text-phantom-accent">
             <Zap className="h-3.5 w-3.5" aria-hidden="true" />
             Live on Avalanche Fuji · Powered by eERC encrypted tokens
           </span>
@@ -473,7 +475,7 @@ function FinalCTA() {
           }}
         />
         <div className="relative">
-          <Lock className="mx-auto h-10 w-10 text-phantom-accent" aria-hidden="true" />
+          <LogoMark className="mx-auto h-12 w-12 drop-shadow-[0_0_20px_rgba(0,212,255,0.45)]" />
           <h2 className="mt-6 text-3xl font-bold text-phantom-text sm:text-4xl">
             Your balance. Nobody&apos;s business.
           </h2>

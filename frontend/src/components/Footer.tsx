@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 const EXPLORER = "https://testnet.snowtrace.io/address";
 
@@ -28,9 +29,7 @@ export function Footer() {
       <div className="mx-auto max-w-6xl px-6 py-14">
         <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
           <div className="max-w-xs">
-            <p className="text-lg font-semibold text-phantom-accent">
-              <span aria-hidden="true">◈</span> PHANTOM
-            </p>
+            <Logo textClassName="text-lg" />
             <p className="mt-3 text-sm leading-relaxed text-phantom-text-muted">
               A private trading shield for Avalanche. Amounts encrypted
               on-chain with eERC and zero-knowledge proofs.

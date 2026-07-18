@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWalletContext } from "@/providers/Providers";
+import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 
 function formatAddress(address: string): string {
@@ -74,9 +75,10 @@ export function Navbar() {
         <div className="flex items-center gap-10">
           <Link
             href="/"
-            className="font-sans text-lg font-semibold text-phantom-accent transition-opacity hover:opacity-80"
+            aria-label="PHANTOM home"
+            className="transition-opacity hover:opacity-80"
           >
-            <span aria-hidden="true">◈</span> PHANTOM
+            <Logo textClassName="text-lg" />
           </Link>
 
           {!onApp && (

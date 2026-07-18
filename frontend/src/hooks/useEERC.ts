@@ -42,22 +42,32 @@ const ERC20_ABI = [
 // Proof circuits generated client-side via snarkjs. Only register/transfer/
 // withdraw are wired up because PHANTOM never mints or burns directly
 // (mint/burn are standalone-only operations, unused in converter mode).
-const CIRCUIT_URLS = {
-  register: {
-    wasm: "/circuits/register/RegistrationCircuit.wasm",
-    zkey: "/circuits/register/RegistrationCircuit.groth16.zkey",
-  },
-  transfer: {
-    wasm: "/circuits/transfer/TransferCircuit.wasm",
-    zkey: "/circuits/transfer/TransferCircuit.groth16.zkey",
-  },
-  withdraw: {
-    wasm: "/circuits/withdraw/WithdrawCircuit.wasm",
-    zkey: "/circuits/withdraw/WithdrawCircuit.groth16.zkey",
-  },
-  mint: { wasm: "", zkey: "" },
-  burn: { wasm: "", zkey: "" },
-};
+//
+// URLs must be ABSOLUTE: snarkjs runs proof generation inside web workers,
+// and a relative "/circuits/..." resolves against the worker's base URL
+// (file:// for blob-spawned workers), not the page origin — the fetch then
+// dies with "TypeError: Failed to fetch". Built lazily because
+// window.location doesn't exist during SSR/prerender.
+function getCircuitURLs() {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const base = `${origin}/circuits`;
+  return {
+    register: {
+      wasm: `${base}/register/RegistrationCircuit.wasm`,
+      zkey: `${base}/register/RegistrationCircuit.groth16.zkey`,
+    },
+    transfer: {
+      wasm: `${base}/transfer/TransferCircuit.wasm`,
+      zkey: `${base}/transfer/TransferCircuit.groth16.zkey`,
+    },
+    withdraw: {
+      wasm: `${base}/withdraw/WithdrawCircuit.wasm`,
+      zkey: `${base}/withdraw/WithdrawCircuit.groth16.zkey`,
+    },
+    mint: { wasm: "", zkey: "" },
+    burn: { wasm: "", zkey: "" },
+  };
+}
 
 // The SDK only calls proveFunc when snarkjsMode is disabled; PHANTOM always
 // proves client-side via the circuit URLs above, so this is never invoked.
@@ -341,7 +351,7 @@ export function useEERC() {
           registrarAddress,
           true, // isConverter — PHANTOM only ever runs in converter mode
           unsupportedProveFunc,
-          CIRCUIT_URLS,
+          getCircuitURLs(),
           decryptionKey,
         );
 

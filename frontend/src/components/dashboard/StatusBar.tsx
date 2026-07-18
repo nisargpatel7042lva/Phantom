@@ -2,6 +2,7 @@
 
 import { useWalletContext } from "@/providers/Providers";
 import { useSpotlight } from "@/lib/useSpotlight";
+import { LogoMark } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 
 function formatAddress(address: string): string {
@@ -40,8 +41,9 @@ export function StatusBar() {
     >
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-phantom-accent">
-            <span aria-hidden="true">◈</span> PHANTOM
+          <h1 className="flex items-center gap-3 text-2xl font-bold text-phantom-accent">
+            <LogoMark className="h-7 w-7" />
+            PHANTOM
           </h1>
           <p className="mt-1 text-sm text-phantom-text-muted">
             Private Trading Shield on Avalanche
